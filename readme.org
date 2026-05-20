@@ -1,7 +1,7 @@
-# I don't own this code. Here's the original repo, I'm just using github pages to host it.
-https://codeberg.org/Schroedinger50PCT/Freifahrschein
 
 #+title: Freifahrschein
+* I don't own this code. Here's the original repo, I'm just using github pages to host it.
+https://codeberg.org/Schroedinger50PCT/Freifahrschein
 
 
 * Motivation und Zweck
