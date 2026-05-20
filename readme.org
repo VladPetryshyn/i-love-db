@@ -1,0 +1,197 @@
+#+title: Freifahrschein
+
+
+* Motivation und Zweck
+
+Ich habe mich bewusst für einen Anbieter entschieden, der mein Deutschlandticket als .pkpass-Datei für mein Wallet bereitstellt.
+
+Das Deutschlandticket ist gemäß den Tarifbestimmungen ein personengebundenes, digitales Ticket, das in Verbindung mit einem amtlichen Lichtbildausweis gültig ist und nicht etwa erst durch die Nutzung einer spezifischen, oft fehleranfälligen und auf Netzwerkverbindung angewiesenen Drittanbieter-App, die ein kleines Logo über den Bildschirm bewegt.
+
+Leider sieht die Realität bei Kontrollen oft anders aus: Zugpersonal oder lokale Verkehrsverbände fordern regelmäßig eben diese Animation ein. Ich bin es leid, ständig mein Recht zu erstreiten, die Polizei für Belanglosigkeiten hinzuzuziehen oder gar Bußgelder zu riskieren, nur weil mein Ticket nicht den persönlichen Vorlieben oder technischen Unzulänglichkeiten des Kontrollpersonals entspricht.
+
+Diese App ist meine Antwort darauf: 
+Eine einfache, zuverlässige Lösung, die genau das tut, was nötig ist, um sich bei einer Kontrolle nicht zum „Affen“ machen zu müssen und die Bedürfnisse der outgesourced und lohngedumpten DienstleisterInnen zufrieden zu stellen.
+
+* Funktionsweise & Features
+Die App wurde entwickelt, um maximale Unabhängigkeit und Datenschutz zu gewährleisten:
+
+    Kein Store-Zwang: Funktioniert als Progressive Web App (PWA) direkt im Browser deiner Wahl.
+
+    100% Offline: Nach dem ersten Laden der Webseite wird die App lokal auf deinem Gerät gespeichert. Es ist zu keiner Zeit eine aktive Internetverbindung für die Anzeige erforderlich. Deine Daten und Bilder verlassen niemals dein Endgerät. 
+
+    Anzeige: Du kannst ein beliebiges Bild (z. B. deinen UIC- oder VDV-Barcode) hinterlegen.
+
+    Animation: Um den Erwartungen des Kontrollpersonals an eine „aktive“ App zu entsprechen, lässt sich ein zweites Bild (z. B. ein Logo) flüssig hin- und herbewegen.
+
+
+* Rechtlicher Hinweis:
+    Diese App ist kein Ersatz für ein gültiges Ticket und muss in Verbindung mit einem solchen verwendet werden.
+
+    Ich übernehme ausdrücklich keinerlei Haftung für die Nutzung dieser App – auch dann nicht, wenn ein gültiges Ticket vorliegt. Die Nutzung erfolgt auf eigene Gefahr und Verantwortung. Jegliche Konsequenzen, die aus der Vorlage dieser App bei einer Kontrolle entstehen, tragen die Nutzer selbst.
+
+* App
+#+begin_src html
+
+    <div class="form-card">
+        <h2>Fahrschein Konfiguration</h2>
+        
+        <div class="input-group">
+            <label>Barcode:</label>
+            <input type="file" id="input-barcode" accept="image/*">
+        </div>
+        
+        <div class="input-group">
+            <label>Animations-Logo:</label>
+            <input type="file" id="input-logo" accept="image/*">
+        </div>
+
+        <div class="input-group">
+            <label>Text Oben:</label>
+            <textarea id="txt-personal" placeholder="Name, Geburtsdatum..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>Text Unten:</label>
+            <textarea id="txt-terms" placeholder="Tarifbestimmungen..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>CSS-Styling:</label>
+            <textarea id="txt-css" placeholder="Custom CSS..." style="font-family: monospace; min-height: 120px;"></textarea>
+        </div>
+        
+        <div class="input-group">
+            <label>5. Position der Animation:</label>
+            <select id="input-position">
+                <option value="top">Oben im Ticket-Block</option>
+                <option value="bottom">Unten im Ticket-Block</option>
+                <option value="both">Beide (Oben &amp; Unten)</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>6. Barcode-Bildgröße (30 - 100):</label>
+            <div class="number-container">
+                <input type="number" id="size-barcode" min="30" max="100" value="85">
+                <span class="number-unit">%</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>7. Animations-Logo-Größe (20 - 120):</label>
+            <div class="number-container">
+                <input type="number" id="size-logo" min="20" max="120" value="38">
+                <span class="number-unit">px</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>8. Abstand zwischen Text und Ticket-Kern (0 - 80):</label>
+            <div class="number-container">
+                <input type="number" id="size-distance" min="0" max="80" value="15">
+                <span class="number-unit">px</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>9. Lade-Bildschirm (Splashscreen) Dauer (0 - 30000):</label>
+            <div class="number-container">
+                <input type="number" id="size-splash" min="0" max="30000" step="100" value="900">
+                <span class="number-unit">ms</span>
+            </div>
+        </div>
+
+        <button id="save-btn" class="btn">Konfiguration &amp; Layout speichern</button>
+        <div id="status" class="status-msg">Gespeichert! Öffne nun deine Ticket-URL.</div>
+    </div>
+
+<script>
+    const KEYS = {
+        BARCODE: 'ft_barcode', LOGO: 'ft_logo', POSITION: 'ft_position',
+        SIZE_BARCODE: 'ft_s_barcode', SIZE_LOGO: 'ft_s_logo', DISTANCE: 'ft_distance',
+        TEXT_PERSONAL: 'ft_t_personal', TEXT_TERMS: 'ft_t_terms',
+        CUSTOM_CSS: 'ft_custom_css', SPLASH_TIMEOUT: 'ft_splash_timeout'
+    };
+
+    const DEFAULT_PERSONAL = `<h3>Freifahrschein</h3>
+<p class="subtitle">Gültig deutschlandweit im öffentlichen Narrenverkehr</p>
+<div class="meta-block">
+  <div class="meta-item"><span class="label">Gültig bis:</span> <span class="val">31.05.2026</span></div>
+  <div class="meta-item"><span class="label">Für:</span> <span class="val bold">Max Musterfrau</span></div>
+</div>`;
+    
+    const DEFAULT_TERMS = `<div class="ticket-details">
+  <div class="detail-row"><span class="label">Gültigkeit</span><br><span class="val">Freifahrschein (Abonnement)<br>2. Klasse, 1 Person</span></div>
+  <div class="detail-row"><span class="label">Verbindung</span><br><span class="val">Bundesweite Nutzung aller Narrverkehrszüge (RE, RB, S-Bahn, U-Bahn, Tram, Bus)</span></div>
+  <div class="detail-row"><span class="label">Buchungsdetails</span><br><span class="val">Dies ist ein Antiterroranschlag des asozialen Netzwerkes.</span></div>
+</div>`;
+
+    const DEFAULT_CSS = `/* --- LAYOUT WRAPPER FOR PERFECT CONTRAST --- */\n.phone-wrapper {\n  width: 100%;\n  max-width: 450px;\n  min-height: 100vh;\n  background-color: #ffffff;\n  box-sizing: border-box;\n  display: flex;\n  flex-direction: column;\n}\n\n@media (min-width: 500px) {\n  .phone-wrapper {\n    min-height: 850px;\n    margin: 20px auto;\n    border-radius: 24px;\n    box-shadow: 0 10px 35px rgba(0,0,0,0.3);\n    border: 10px solid #2d3135;\n  }\n}\n\n.ticket-layout {\n  width: 100%;\n  display: flex;\n  flex-direction: column;\n  background-color: #ffffff;\n  flex-grow: 1;\n}\n\n/* --- TEXT CONTAINER STYLES (ALWAYS FORCED WHITE BACKGROUND) --- */\n.box-personal-style {\n  padding: 25px 24px 12px 24px;\n  background-color: #ffffff !important;\n  color: #111111 !important;\n}\n.box-personal-style h3 {\n  font-size: 1.45rem;\n  font-weight: 700;\n  color: #111111 !important;\n  margin: 0 0 4px 0;\n}\n.box-personal-style .subtitle {\n  font-size: 0.9rem;\n  color: #495057 !important;\n  margin: 0 0 16px 0;\n  line-height: 1.4;\n}\n.box-personal-style .meta-block {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n.box-personal-style .meta-item {\n  font-size: 1rem;\n  color: #111111 !important;\n}\n.box-personal-style .label {\n  font-weight: 600;\n  display: inline-block;\n  width: 95px;\n  color: #495057 !important;\n}\n.box-personal-style .val {\n  color: #111111 !important;\n}\n.box-personal-style .val.bold {\n  font-weight: 700;\n}\n\n/* --- LOWER TEXT BLOCK (TERMS) --- */\n.box-terms-style {\n  padding: 20px 24px 40px 24px;\n  border-top: 1px solid #dee2e6;\n  background-color: #ffffff !important;\n  color: #212529 !important;\n}\n.box-terms-style .ticket-details {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n.box-terms-style .label {\n  font-size: 0.85rem;\n  font-weight: 700;\n  color: #111111 !important;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.box-terms-style .val {\n  font-size: 0.95rem;\n  color: #212529 !important;\n  line-height: 1.45;\n}`;
+
+    function sanitizeNumber(value, min, max, defaultValue) {
+        let num = parseInt(value, 10);
+        if (isNaN(num)) return defaultValue;
+        return Math.max(min, Math.min(max, num));
+    }
+
+    function sanitizeText(text) {
+        if (!text) return '';
+        return text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+\s*=/gi, 'X_on_');
+    }
+
+    function processFile(inputElement, storageKey) {
+        const file = inputElement.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => localStorage.setItem(storageKey, e.target.result);
+            reader.readAsDataURL(file);
+        }
+    }
+
+    document.getElementById('input-barcode').addEventListener('change', () => processFile(document.getElementById('input-barcode'), KEYS.BARCODE));
+    document.getElementById('input-logo').addEventListener('change', () => processFile(document.getElementById('input-logo'), KEYS.LOGO));
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('txt-personal').value = localStorage.getItem(KEYS.TEXT_PERSONAL) || DEFAULT_PERSONAL;
+        document.getElementById('txt-terms').value = localStorage.getItem(KEYS.TEXT_TERMS) || DEFAULT_TERMS;
+        document.getElementById('txt-css').value = localStorage.getItem(KEYS.CUSTOM_CSS) || DEFAULT_CSS;
+
+        Object.keys(KEYS).forEach(key => {
+            const val = localStorage.getItem(KEYS[key]);
+            if (!val) return;
+            if (key === 'POSITION') document.getElementById('input-position').value = val;
+            if (key === 'SIZE_BARCODE') document.getElementById('size-barcode').value = val;
+            if (key === 'SIZE_LOGO') document.getElementById('size-logo').value = val;
+            if (key === 'DISTANCE') document.getElementById('size-distance').value = val;
+            if (key === 'SPLASH_TIMEOUT') document.getElementById('size-splash').value = val; 
+        });
+    });
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+        const sanitizedBarcodeSize = sanitizeNumber(document.getElementById('size-barcode').value, 30, 100, 85);
+        const sanitizedLogoSize = sanitizeNumber(document.getElementById('size-logo').value, 20, 120, 38);
+        const sanitizedDistance = sanitizeNumber(document.getElementById('size-distance').value, 0, 80, 15);
+        const sanitizedSplash = sanitizeNumber(document.getElementById('size-splash').value, 0, 30000, 900);
+
+        document.getElementById('size-barcode').value = sanitizedBarcodeSize;
+        document.getElementById('size-logo').value = sanitizedLogoSize;
+        document.getElementById('size-distance').value = sanitizedDistance;
+        document.getElementById('size-splash').value = sanitizedSplash;
+
+        localStorage.setItem(KEYS.POSITION, document.getElementById('input-position').value);
+        localStorage.setItem(KEYS.SIZE_BARCODE, sanitizedBarcodeSize);
+        localStorage.setItem(KEYS.SIZE_LOGO, sanitizedLogoSize);
+        localStorage.setItem(KEYS.DISTANCE, sanitizedDistance);
+        localStorage.setItem(KEYS.SPLASH_TIMEOUT, sanitizedSplash);
+        
+        localStorage.setItem(KEYS.TEXT_PERSONAL, sanitizeText(document.getElementById('txt-personal').value));
+        localStorage.setItem(KEYS.TEXT_TERMS, sanitizeText(document.getElementById('txt-terms').value));
+        localStorage.setItem(KEYS.CUSTOM_CSS, sanitizeText(document.getElementById('txt-css').value)); 
+        
+        document.getElementById('status').style.display = 'block';
+        setTimeout(() => { document.getElementById('status').style.display = 'none'; }, 4000);
+    });
+</script>
+#+end_src

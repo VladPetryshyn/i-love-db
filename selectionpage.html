@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freifahrschein Konfiguration</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f1f3f5; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .form-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); max-width: 460px; width: 100%; box-sizing: border-box; margin: 20px; }
+        h2 { margin-top: 0; color: #222; font-size: 1.4rem; text-align: center; }
+        .input-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; color: #444; font-size: 0.9rem; }
+        input[type="file"], select, input[type="text"], textarea, input[type="number"] { width: 100%; padding: 10px; background: #f8f9fa; border: 1px solid #ced4da; border-radius: 8px; box-sizing: border-box; font-size: 1rem; font-family: inherit; }
+        input[type="file"] { border-style: dashed; cursor: pointer; }
+        textarea { resize: vertical; min-height: 80px; }
+        input[type="number"] { -moz-appearance: textfield; }
+        input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .number-container { position: relative; display: flex; align-items: center; }
+        .number-unit { position: absolute; right: 12px; font-weight: bold; color: #6c757d; pointer-events: none; }
+        .number-container input { padding-right: 45px; }
+        .btn { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .status-msg { margin-top: 20px; padding: 12px; background-color: #d4edda; border-radius: 8px; text-align: center; color: #155724; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="form-card">
+        <h2>Fahrschein Konfiguration</h2>
+        
+        <div class="input-group">
+            <label>1. Ticket / QR-Code Screenshot:</label>
+            <input type="file" id="input-barcode" accept="image/*">
+        </div>
+        
+        <div class="input-group">
+            <label>2. Wasserzeichen / Animations-Logo:</label>
+            <input type="file" id="input-logo" accept="image/*">
+        </div>
+
+        <div class="input-group">
+            <label>3. Personendaten (Text Oben):</label>
+            <textarea id="txt-personal" placeholder="Name, Geburtsdatum..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>4. Zusatztext / AGB (Text Unten):</label>
+            <textarea id="txt-terms" placeholder="Tarifbestimmungen..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <label>4b. Eigenes CSS-Styling (optional):</label>
+            <textarea id="txt-css" placeholder="Custom CSS..." style="font-family: monospace; min-height: 120px;"></textarea>
+        </div>
+        
+        <div class="input-group">
+            <label>5. Position der Animation:</label>
+            <select id="input-position">
+                <option value="top">Oben im Ticket-Block</option>
+                <option value="bottom">Unten im Ticket-Block</option>
+                <option value="both">Beide (Oben &amp; Unten)</option>
+            </select>
+        </div>
+
+	<div class="input-group">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" id="input-flip" style="width: auto; margin: 0;">
+        5b. Logo beim Zurückgehen spiegeln (horizontal flippen)
+    </label>
+</div>
+
+        <div class="input-group">
+            <label>6. Barcode-Bildgröße (30 - 100):</label>
+            <div class="number-container">
+                <input type="number" id="size-barcode" min="30" max="100" value="85">
+                <span class="number-unit">%</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>7. Animations-Logo-Größe (20 - 120):</label>
+            <div class="number-container">
+                <input type="number" id="size-logo" min="20" max="120" value="38">
+                <span class="number-unit">px</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>8. Abstand zwischen Text und Ticket-Kern (0 - 80):</label>
+            <div class="number-container">
+                <input type="number" id="size-distance" min="0" max="80" value="15">
+                <span class="number-unit">px</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>9. Lade-Bildschirm (Splashscreen) Dauer (0 - 30000):</label>
+            <div class="number-container">
+                <input type="number" id="size-splash" min="0" max="30000" step="100" value="900">
+                <span class="number-unit">ms</span>
+            </div>
+        </div>
+
+        <button id="save-btn" class="btn">Konfiguration &amp; Layout speichern</button>
+        <div id="status" class="status-msg">Gespeichert! Öffne nun deine Ticket-URL.</div>
+    </div>
+<script>
+    const KEYS = {
+        BARCODE: 'ft_barcode', LOGO: 'ft_logo', POSITION: 'ft_position',
+        SIZE_BARCODE: 'ft_s_barcode', SIZE_LOGO: 'ft_s_logo', DISTANCE: 'ft_distance',
+        TEXT_PERSONAL: 'ft_t_personal', TEXT_TERMS: 'ft_t_terms',
+        CUSTOM_CSS: 'ft_custom_css', SPLASH_TIMEOUT: 'ft_splash_timeout',
+        FLIP_BACKWARD: 'ft_flip_backward' // <-- New key
+    };
+
+    // ... (Keep DEFAULT_PERSONAL, DEFAULT_TERMS, and DEFAULT_CSS exactly as they are) ...
+
+    function sanitizeNumber(value, min, max, defaultValue) {
+        let num = parseInt(value, 10);
+        if (isNaN(num)) return defaultValue;
+        return Math.max(min, Math.min(max, num));
+    }
+
+    function sanitizeText(text) {
+        if (!text) return '';
+        return text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+\s*=/gi, 'X_on_');
+    }
+
+    function processFile(inputElement, storageKey) {
+        const file = inputElement.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => localStorage.setItem(storageKey, e.target.result);
+            reader.readAsDataURL(file);
+        }
+    }
+
+    document.getElementById('input-barcode').addEventListener('change', () => processFile(document.getElementById('input-barcode'), KEYS.BARCODE));
+    document.getElementById('input-logo').addEventListener('change', () => processFile(document.getElementById('input-logo'), KEYS.LOGO));
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('txt-personal').value = localStorage.getItem(KEYS.TEXT_PERSONAL) || DEFAULT_PERSONAL;
+        document.getElementById('txt-terms').value = localStorage.getItem(KEYS.TEXT_TERMS) || DEFAULT_TERMS;
+        document.getElementById('txt-css').value = localStorage.getItem(KEYS.CUSTOM_CSS) || DEFAULT_CSS;
+
+        // Load checkbox state
+        document.getElementById('input-flip').checked = localStorage.getItem(KEYS.FLIP_BACKWARD) === 'true';
+
+        Object.keys(KEYS).forEach(key => {
+            const val = localStorage.getItem(KEYS[key]);
+            if (!val) return;
+            if (key === 'POSITION') document.getElementById('input-position').value = val;
+            if (key === 'SIZE_BARCODE') document.getElementById('size-barcode').value = val;
+            if (key === 'SIZE_LOGO') document.getElementById('size-logo').value = val;
+            if (key === 'DISTANCE') document.getElementById('size-distance').value = val;
+            if (key === 'SPLASH_TIMEOUT') document.getElementById('size-splash').value = val; 
+        });
+    });
+
+    document.getElementById('save-btn').addEventListener('click', () => {
+        const sanitizedBarcodeSize = sanitizeNumber(document.getElementById('size-barcode').value, 30, 100, 85);
+        const sanitizedLogoSize = sanitizeNumber(document.getElementById('size-logo').value, 20, 120, 38);
+        const sanitizedDistance = sanitizeNumber(document.getElementById('size-distance').value, 0, 80, 15);
+        const sanitizedSplash = sanitizeNumber(document.getElementById('size-splash').value, 0, 30000, 900);
+
+        document.getElementById('size-barcode').value = sanitizedBarcodeSize;
+        document.getElementById('size-logo').value = sanitizedLogoSize;
+        document.getElementById('size-distance').value = sanitizedDistance;
+        document.getElementById('size-splash').value = sanitizedSplash;
+
+        localStorage.setItem(KEYS.POSITION, document.getElementById('input-position').value);
+        localStorage.setItem(KEYS.SIZE_BARCODE, sanitizedBarcodeSize);
+        localStorage.setItem(KEYS.SIZE_LOGO, sanitizedLogoSize);
+        localStorage.setItem(KEYS.DISTANCE, sanitizedDistance);
+        localStorage.setItem(KEYS.SPLASH_TIMEOUT, sanitizedSplash);
+        localStorage.setItem(KEYS.FLIP_BACKWARD, document.getElementById('input-flip').checked); // <-- Save checkbox state
+        
+        localStorage.setItem(KEYS.TEXT_PERSONAL, sanitizeText(document.getElementById('txt-personal').value));
+        localStorage.setItem(KEYS.TEXT_TERMS, sanitizeText(document.getElementById('txt-terms').value));
+        localStorage.setItem(KEYS.CUSTOM_CSS, sanitizeText(document.getElementById('txt-css').value)); 
+        
+        document.getElementById('status').style.display = 'block';
+        setTimeout(() => { document.getElementById('status').style.display = 'none'; }, 4000);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ticket</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #212529;
+            overflow-x: hidden; overflow-y: auto; min-height: 100vh;
+            display: flex; justify-content: center; align-items: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            width: 100vw;
+        }
+
+        #splash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #7b7d7d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.25s ease-out;
+        }
+
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .d-ticket-spinner {
+            width: 150px;
+            height: auto;
+        }
+
+        .wave-mask {
+            width: 240px;
+            height: 223px;
+            fill: #fff;
+            animation: travelingWipe 2.2s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+        }
+
+        @keyframes travelingWipe {
+            0% { transform: translateX(-240px); }
+            45% { transform: translateX(0px); }
+            55% { transform: translateX(0px); }
+            100% { transform: translateX(240px); }
+        }
+
+        .label-text {
+            color: #111111;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.02em;
+        }
+
+        #no-data-msg {
+            display: none;
+            text-align: center; padding: 30px; color: #f8f9fa;
+            background: rgba(255,255,255,0.1); border-radius: 12px; max-width: 320px; margin: auto;
+        }
+
+        .phone-wrapper {
+            display: none;
+            position: relative;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+
+        .ticket-layout {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+
+        .text-container-box {
+            padding: 14px 20px;
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        .box-personal-style {
+            background-color: #ffffff !important;
+        }
+
+        .box-terms-style {
+            background-color: #ffffff !important;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .ticket-core-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            position: relative;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .animation-zone {
+            width: 100%;
+            position: relative;
+            display: none;
+            background-color: #ffffff;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .barcode-zone {
+            width: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #ffffff;
+            padding: 10px 0;
+        }
+
+        #barcode-img {
+            width: 100%; height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            transition: transform 0.2s;
+        }
+
+        .animated-logo {
+            position: absolute;
+            top: 50%; left: 0;
+            width: auto;
+            transform: translateY(-50%);
+            will-change: transform;
+            pointer-events: none;
+        }
+    </style>
+    <style id="custom-user-css"></style>
+</head>
+<body>
+
+    <div id="splash-overlay">
+        <div class="loader-container">
+            <svg class="d-ticket-spinner" viewBox="0 0 240 223" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <clipPath id="traveling-clip">
+                        <rect class="wave-mask" x="0" y="0" width="240" height="223" />
+                    </clipPath>
+                </defs>
+                <g clip-path="url(#traveling-clip)">
+                    <rect x="92" y="0" width="56" height="15.5" rx="7.75" fill="#2a2a29" />
+                    <rect x="62" y="26" width="116" height="15.5" rx="7.75" fill="#2a2a29" />
+                    <rect x="58" y="52" width="124" height="15.5" rx="7.75" fill="#2a2a29" />
+                    <rect x="50" y="78" width="140" height="15.5" rx="7.75" fill="#e42f25" />
+                    <rect x="36" y="104" width="168" height="15.5" rx="7.75" fill="#e42f25" />
+                    <rect x="41" y="130" width="109" height="15.5" rx="7.75" fill="#e42f25" />              
+                    <rect x="46" y="156" width="119" height="15.5" rx="7.75" fill="#fbbe00" />
+                    <rect x="73" y="182" width="119" height="15.5" rx="7.75" fill="#fbbe00" />
+                    <rect x="63" y="208" width="100" height="15.5" rx="7.75" fill="#fbbe00" />
+                </g>
+            </svg>
+            <div class="label-text">Loading</div>
+        </div>
+    </div>
+
+    <div id="no-data-msg">
+        <h3>Keine Ticketdaten lokal hinterlegt.</h3>
+        <p>Bitte rufe zuerst die Konfigurationsseite auf.</p>
+    </div>
+
+    <div class="phone-wrapper" id="app-frame">
+        <div class="ticket-layout">
+            
+            <div id="box-personal" class="text-container-box box-personal-style" style="display: none;"></div>
+
+            <div class="ticket-core-container" id="core-container">
+                
+                <div id="zone-top" class="animation-zone">
+                    <img id="logo-top" class="animated-logo" src="" alt="Logo Oben">
+                </div>
+
+                <div class="barcode-zone">
+                    <img id="barcode-img" src="" alt="Ticket Barcode">
+                </div>
+
+                <div id="zone-bottom" class="animation-zone">
+                    <img id="logo-bottom" class="animated-logo" src="" alt="Logo Unten">
+                </div>
+
+            </div>
+            <div id="box-terms" class="text-container-box box-terms-style" style="display: none;"></div>
+        </div>
+    </div>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => console.error(err));
+        });
+    }
+
+    const KEYS = {
+        BARCODE: 'ft_barcode', LOGO: 'ft_logo', POSITION: 'ft_position',
+        SIZE_BARCODE: 'ft_s_barcode', SIZE_LOGO: 'ft_s_logo', DISTANCE: 'ft_distance',
+        TEXT_PERSONAL: 'ft_t_personal', TEXT_TERMS: 'ft_t_terms',
+        CUSTOM_CSS: 'ft_custom_css', SPLASH_TIMEOUT: 'ft_splash_timeout',
+        FLIP_BACKWARD: 'ft_flip_backward' // <-- New key
+    };
+
+    // ... (Keep DEFAULT_PERSONAL, DEFAULT_TERMS, and DEFAULT_CSS exactly as they are) ...
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const barcodeData = localStorage.getItem(KEYS.BARCODE) || 'barcode.png';
+        const logoData = localStorage.getItem(KEYS.LOGO) || 'logo.png';
+        const position = localStorage.getItem(KEYS.POSITION) || 'top';
+        const sizeBarcode = localStorage.getItem(KEYS.SIZE_BARCODE) || '85';
+        const sizeLogo = localStorage.getItem(KEYS.SIZE_LOGO) || '38';
+        const distance = localStorage.getItem(KEYS.DISTANCE) || '15';
+        const shouldFlip = localStorage.getItem(KEYS.FLIP_BACKWARD) === 'true'; // <-- Read option
+
+        const textPersonal = localStorage.getItem(KEYS.TEXT_PERSONAL) || DEFAULT_PERSONAL;
+        const textTerms = localStorage.getItem(KEYS.TEXT_TERMS) || DEFAULT_TERMS;
+        const customCss = localStorage.getItem(KEYS.CUSTOM_CSS) || DEFAULT_CSS;
+
+        document.getElementById('custom-user-css').textContent = customCss;
+
+        const frame = document.getElementById('app-frame');
+        const barcodeImg = document.getElementById('barcode-img');
+        barcodeImg.src = barcodeData;
+        barcodeImg.style.transform = `scale(${parseInt(sizeBarcode, 10) / 100})`;
+
+        if (textPersonal && textPersonal.trim() !== "") {
+            const personalBox = document.getElementById('box-personal');
+            personalBox.innerHTML = textPersonal;
+            personalBox.style.display = 'block';
+        }
+        if (textTerms && textTerms.trim() !== "") {
+            const termsBox = document.getElementById('box-terms');
+            termsBox.innerHTML = textTerms;
+            termsBox.style.display = 'block';
+        }
+
+        const coreContainer = document.getElementById('core-container');
+        coreContainer.style.marginTop = `${distance}px`;
+        coreContainer.style.marginBottom = `${distance}px`;
+
+        const logoTop = document.getElementById('logo-top');
+        const logoBottom = document.getElementById('logo-bottom');
+        const zoneTop = document.getElementById('zone-top');
+        const zoneBottom = document.getElementById('zone-bottom');
+
+        let activeLogos = [];
+        const zoneHeight = parseInt(sizeLogo, 10) * 1.35;
+
+        if (position === 'top' || position === 'both') {
+            zoneTop.style.display = 'block';
+            zoneTop.style.height = `${zoneHeight}px`;
+            logoTop.src = logoData;
+            logoTop.style.height = `${sizeLogo}px`;
+            activeLogos.push(logoTop);
+        }
+        if (position === 'bottom' || position === 'both') {
+            zoneBottom.style.display = 'block';
+            zoneBottom.style.height = `${zoneHeight}px`;
+            logoBottom.src = logoData;
+            logoBottom.style.height = `${sizeLogo}px`;
+            activeLogos.push(logoBottom);
+        }
+
+        if (activeLogos.length > 0) {
+            let loadedCount = 0;
+            activeLogos.forEach(logo => {
+                if (logo.complete) {
+                    loadedCount++;
+                    if (loadedCount === activeLogos.length) {
+                        startSynchronizedAnimation(activeLogos, coreContainer, shouldFlip);
+                    }
+                } else {
+                    logo.addEventListener('load', () => {
+                        loadedCount++;
+                        if (loadedCount === activeLogos.length) {
+                            startSynchronizedAnimation(activeLogos, coreContainer, shouldFlip);
+                        }
+                    });
+                }
+            });
+        }
+
+        const splashTimeout = parseInt(localStorage.getItem(KEYS.SPLASH_TIMEOUT) ?? '900', 10);
+
+        const hideSplash = () => {
+            const overlay = document.getElementById('splash-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                frame.style.display = 'flex'; 
+                setTimeout(() => { overlay.remove(); }, 250);
+            }
+        };
+
+        if (splashTimeout > 0) {
+            setTimeout(hideSplash, splashTimeout);
+        } else {
+            hideSplash();
+        }
+    });
+
+    function startSynchronizedAnimation(logoElements, containerEl, shouldFlip) {
+        let posX = 0;
+        let direction = 1;
+        const speed = 1.3; 
+
+        function step() {
+            const containerWidth = containerEl.clientWidth;
+            const logoWidth = logoElements[0].getBoundingClientRect().width || 38; 
+
+            posX += speed * direction;
+
+            if (posX + logoWidth >= containerWidth) {
+                posX = containerWidth - logoWidth;
+                direction = -1;
+            } else if (posX <= 0) {
+                posX = 0;
+                direction = 1;
+            }
+
+            // Apply horizontal flip scale factor if going backwards and feature is turned on
+            const flipScale = (shouldFlip && direction === -1) ? ' scaleX(-1)' : ' scaleX(1)';
+
+            for (let i = 0; i < logoElements.length; i++) {
+                logoElements[i].style.transform = `translate3d(${posX}px, -50%, 0)${flipScale}`;
+            }
+
+            requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+</script>
+</body>
+</html>
